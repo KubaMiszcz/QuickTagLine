@@ -16,116 +16,77 @@ export default class QuickTagLinePlugin extends Plugin {
         // This adds a settings tab so the user can configure various aspects of the plugin
         this.addSettingTab(new SettingTab(this.app, this));
 
-        this.addCommand({
-            id: "toggle-tag1",
-            name: "Toggle tag1",
-            editorCallback: (editor: Editor, view: MarkdownView) => {
-                const pattern = /- \[.\] /;
-                let currentCursorPosition = editor.getCursor();
-                const startSelectionLineNo = editor.getCursor("from");
-                const endSelectionLineNo = editor.getCursor("to");
-                const tag = this.settings.tags[0];
+        this.settings.tags.forEach((tag, idx) => {
+            if (!tag.isEnabled) {
+                return;
+            }
+            
+            this.addCommand({
+                id: "toggle-tag-" + idx,
+                name: "Toggle tag " + tag.name,
+                editorCallback: (editor: Editor, view: MarkdownView) => {
+                    const currentCursorPosition = editor.getCursor();
+                    const startSelectionLineNo = editor.getCursor("from");
+                    const endSelectionLineNo = editor.getCursor("to");
 
-                if (tag.isEnabled) {
-                    for (
-                        let lineNo = startSelectionLineNo.line;
-                        lineNo <= endSelectionLineNo.line;
-                        lineNo++
-                    ) {
-                        const currentLine = editor.getLine(lineNo);
-                        let newLine = currentLine;
+                    if (tag.isEnabled) {
+                        for (
+                            let lineNo = startSelectionLineNo.line;
+                            lineNo <= endSelectionLineNo.line;
+                            lineNo++
+                        ) {
+                            const currentLine = editor.getLine(lineNo);
+                            let newLine = currentLine;
 
-                        if (this.hasThisTagAlready(currentLine, tag)) {
-                            newLine = this.removeTag(currentLine, tag);
-                        } else {
-                            newLine = this.applyTag(currentLine, tag);
+                            if (this.hasThisTagAlready(currentLine, tag)) {
+                                newLine = this.removeTag(currentLine, tag);
+                            } else {
+                                newLine = this.applyTag(currentLine, tag);
+                            }
+
+                            editor.setLine(lineNo, newLine);
                         }
-
-                        editor.setLine(lineNo, newLine);
                     }
-                }
 
-                editor.setCursor(currentCursorPosition);
-                editor.setSelection(startSelectionLineNo, endSelectionLineNo);
-            },
-        });
-
-        this.addCommand({
-            id: "toggle-additional-states",
-            name: "Toggle Additional states",
-            editorCallback: (editor: Editor, view: MarkdownView) => {
-                const pattern = /- \[.\] /;
-                const allStates = this.settings.tags;
-                const currentCursorPosition = editor.getCursor();
-                const startSelectionLineNo = editor.getCursor("from");
-                const endSelectionLineNo = editor.getCursor("to");
-
-                for (
-                    let lineNo = startSelectionLineNo.line;
-                    lineNo <= endSelectionLineNo.line;
-                    lineNo++
-                ) {
-                    const currentLine = editor.getLine(lineNo);
-                    let newLine = currentLine;
-
-                    let currentStateIdx = allStates.findIndex((s) =>
-                        currentLine.trimStart().startsWith(`- [${s.value}] `)
+                    editor.setCursor(currentCursorPosition);
+                    editor.setSelection(
+                        startSelectionLineNo,
+                        endSelectionLineNo
                     );
-
-                    let nextState: ITagItem;
-                    do {
-                        currentStateIdx++;
-
-                        if (currentStateIdx >= allStates.length) {
-                            nextState = { value: " ", isEnabled: true };
-                        } else {
-                            nextState = allStates[currentStateIdx];
-                        }
-                    } while (!nextState.isEnabled);
-
-                    newLine = currentLine.replace(
-                        pattern,
-                        `- [${nextState.value}] `
-                    );
-
-                    editor.setLine(lineNo, newLine);
-                }
-
-                editor.setCursor(currentCursorPosition);
-                editor.setSelection(startSelectionLineNo, endSelectionLineNo);
-            },
+                },
+            });
         });
     }
 
     applyTag(line: string, tag: ITagItem) {
-        return line + ` ${tag.value}`;
+        return line + ` ${tag.name}`;
     }
 
     removeTag(line: string, tag: ITagItem) {
-        return line.replace(' '+tag.value, "");
+        return line.replace(" " + tag.name, "");
     }
 
     private validateSettings() {
         this.settings.tags.forEach((s) => {
-            if (s.value?.length < 1) {
+            if (s.name?.length < 1) {
                 s.isEnabled = s.isEnabled = false;
-                return; //todo czy continue?
+                return; //todo return or continue?
             }
 
-            if (s.value?.startsWith("#")) {
-                s.value = s.value.slice(1);
+            if (s.name?.startsWith("#")) {
+                s.name = s.name.slice(1);
             }
 
             this.settings.forbiddenChars
                 .split("")
-                .forEach((c) => (s.value = s.value.replace(c, "-")));
+                .forEach((c) => (s.name = s.name.replace(c, this.settings.safeSpecialChar)));
 
-            s.value = "#" + s.value;
+            s.name = "#" + s.name;
         });
     }
 
     private hasThisTagAlready(currentLine: string, tag: ITagItem) {
-        return currentLine.search(tag.value) >= 0;
+        return currentLine.search(tag.name) >= 0;
     }
 
     onunload() {}
