@@ -1,0 +1,15 @@
+{
+	"id": "quick-tag-line",
+	"name": "Quick Tag Line",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Handle tags for lines.",
+	"author": "KubaMiszcz",
+	"authorUrl": "https://github.com/KubaMiszcz",
+	"fundingUrl": {
+		"Buy Me a Coffee": "https://www.buymeacoffee.com/kubamiszcz",
+		"GitHub Sponsor": "https://github.com/sponsors/KubaMiszcz",
+		"Patreon": "https://www.patreon.com/KubaMiszcz/"
+	},
+	"isDesktopOnly": false
+}
